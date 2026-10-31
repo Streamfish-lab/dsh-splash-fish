@@ -1,0 +1,30 @@
+# ---- 大文件：不进仓库 ----
+# 原图（15 MB）。仓库里留 assets/splash.webp 就够了，build.py 会自动回退。
+assets/splash.png
+
+# 渲染出的帧序列（108 帧 × 约 2 MB，一次就是 200 MB+）
+hair/frames/
+hair/frames25d/
+hair/frames_layers/
+
+# 拆层产物（跑 07 才生成）
+hair/layers/
+
+# 模型权重
+checkpoints/
+*.pt
+*.pth
+*.safetensors
+
+# ---- Python ----
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ---- 编辑器 / 系统 ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

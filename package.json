@@ -1,0 +1,45 @@
+{
+  "name": "dsh-splash-fish",
+  "version": "0.1.0",
+  "description": "Startup film for DeepSeek Harness: the artwork develops out of the dark, a light bloom and a diagonal sheen pass over it, then the layer dissolves into the workspace.",
+  "type": "module",
+  "main": "lib/index.js",
+  "license": "MIT",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  },
+  "scripts": {
+    "build": "python3 build.py",
+    "check": "node --check client.js"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "splash",
+    "boot-animation"
+  ],
+  "files": [
+    "lib",
+    "client.js",
+    "cordis.patch.yml",
+    "assets/splash.webp",
+    "client.template.js",
+    "build.py",
+    "preview.html",
+    "dev/harness.html",
+    "README.md"
+  ]
+}

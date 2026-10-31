@@ -1,0 +1,5 @@
+# dsh-splash-fish roster patch — merged by `dsh plugin add` (dsh.bundle.patch).
+# Mounts the host half so the client bundle is loaded into the page.
+- insert:
+    - id: dsh-splash-fish
+      name: 'dsh-splash-fish'
