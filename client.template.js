@@ -23,7 +23,10 @@ window.__ModuleLoader__.load({
 
     var CSS = `
 .sf-root{position:fixed;inset:0;z-index:2147483600;overflow:hidden;background:#05080d;
-  opacity:1;transform:scale(1);will-change:opacity,transform;cursor:default}
+  opacity:1;transform:scale(1);will-change:opacity,transform;
+  /* 永不接收鼠标：即使这一层因为任何原因残留，也绝不能挡住界面操作。
+     跳过改为在 window 上捕获相位监听（见 mountSplash）。 */
+  pointer-events:none}
 .sf-root.sf-out{animation:sfExit 680ms cubic-bezier(.4,0,.25,1) forwards}
 @keyframes sfExit{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.045)}}
 
@@ -47,13 +50,6 @@ window.__ModuleLoader__.load({
 .sf-hair{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
   pointer-events:none;opacity:0;transition:opacity 260ms ease;background:transparent}
 .sf-hair.sf-on{opacity:1}
-
-/* ---------- top band: 让 Windows 原生窗口按钮（− □ ×）融入画面 ----------
-   那块区域由操作系统绘制、在网页之上，CSS 盖不住它本身；但可以让它周围的
-   画面也变成同色，于是它读起来像一条刻意的顶栏，而不是"没盖住的缺口"。
-   63% × 76px ≈ 48px 完全不透明，足够覆盖 32–48px 的常见标题栏高度。 */
-.sf-topband{position:absolute;left:0;right:0;top:0;height:76px;pointer-events:none;
-  background:linear-gradient(180deg,#000 0%,#000 63%,rgba(0,0,0,.82) 78%,rgba(0,0,0,0) 100%)}
 
 /* ---------- vignette ---------- */
 .sf-vignette{position:absolute;inset:0;pointer-events:none;opacity:0;background:
@@ -126,7 +122,6 @@ window.__ModuleLoader__.load({
         '<div class="sf-mark"><b>DEEPSEEK</b><i>HARNESS</i></div>' +
         '<div class="sf-sub"><span class="sf-dot"></span>starting workspace</div>' +
       '</div>' +
-      '<div class="sf-topband"></div>' +
       '<div class="sf-flash"></div>' +
       '</div>';
 
@@ -184,6 +179,13 @@ window.__ModuleLoader__.load({
          把后代的大 z-index 锁死在里面——对外等效只有 20，
          于是被 2147483100 的第三方挂件（比如余额鲸鱼）压住。
          挂到 body 下，才在根上下文中真正参与排序。 */
+      /* 先把上一次可能残留的节点清掉：这一层不在 React 树里，
+         如果宿主重渲染导致卸载回调没跑到，旧的会一直挂在 body 上。 */
+      var stale = document.querySelectorAll(".sf-stage-host");
+      for (var k = 0; k < stale.length; k++) {
+        try { stale[k].parentNode.removeChild(stale[k]); } catch (e) {}
+      }
+
       var stage = document.createElement("div");
       stage.className = "sf-stage-host";
       stage.innerHTML = MARKUP;
@@ -215,35 +217,49 @@ window.__ModuleLoader__.load({
       requestAnimationFrame(function () { root.classList.add("sf-play"); });
 
       var done = false;
+      var cleaned = false;
       var timers = [];
+
+      /* 幂等清理：无论走哪条路，最终都会执行到一次，而且只会执行一次。 */
+      function cleanup() {
+        if (cleaned) return;
+        cleaned = true;
+        timers.forEach(clearTimeout);
+        window.removeEventListener("pointerdown", onSkip, true);
+        window.removeEventListener("keydown", onSkip, true);
+        window.removeEventListener("wheel", onSkip, true);
+        if (hair) { hair.drop(); try { URL.revokeObjectURL(hair.url); } catch (e) {} }
+        if (stage.parentNode) stage.parentNode.removeChild(stage);
+      }
+
       function finish() {
         if (done) return;
         done = true;
-        timers.forEach(clearTimeout);
         if (hair) hair.drop();          /* 跳过时立刻停播，不再解码 */
         root.classList.add("sf-out");
         timers.push(setTimeout(function () { if (opts.onDone) opts.onDone(); }, EXIT));
+        /* 兜底：就算 onDone 因为宿主重渲染没被调用，到点也强制摘掉整层 */
+        timers.push(setTimeout(cleanup, EXIT + 1200));
       }
       timers.push(setTimeout(finish, TOTAL));
 
-      function onKey() { finish(); }
-      function onWheel() { finish(); }
-      root.addEventListener("pointerdown", finish);
-      window.addEventListener("keydown", onKey);
-      window.addEventListener("wheel", onWheel, { passive: true });
+      /* 跳过改成 window 捕获相位：因为根层 pointer-events:none 收不到点击事件，
+         但捕获相位依然能在 window 上看到它。 */
+      /* 播放期间点一下 = 跳过，并且把这次点击吞掉（stopPropagation），
+         避免同时误触到下面的界面按钮。播放结束后监听被移除，完全不影响操作。 */
+      function onSkip(e) {
+        if (done) return;
+        if (e && e.stopPropagation) e.stopPropagation();
+        finish();
+      }
+      window.addEventListener("pointerdown", onSkip, true);
+      window.addEventListener("keydown", onSkip, true);
+      window.addEventListener("wheel", onSkip, true);
 
       return {
         total: TOTAL + EXIT,
         skip: finish,
-        destroy: function () {
-          done = true;
-          timers.forEach(clearTimeout);
-          root.removeEventListener("pointerdown", finish);
-          window.removeEventListener("keydown", onKey);
-          window.removeEventListener("wheel", onWheel);
-          if (hair) { hair.drop(); try { URL.revokeObjectURL(hair.url); } catch (e) {} }
-          if (stage.parentNode) stage.parentNode.removeChild(stage);
-        },
+        destroy: function () { done = true; cleanup(); },
       };
     }
 
@@ -287,6 +303,7 @@ window.__ModuleLoader__.load({
           style.id = "dsh-splash-fish-style";
           style.textContent = CSS +
             ".dsh-splash-fish{position:fixed;inset:0;z-index:2147483600;overflow:hidden;" +
+            "pointer-events:none;" +          /* 这层是 React 渲染的空壳，万一没被卸载也绝不能挡点击 */
             '--sf-img:url("__IMG_DATA_URI__")}';
           document.head.appendChild(style);
           return function () { style.remove(); };
