@@ -48,6 +48,13 @@ window.__ModuleLoader__.load({
   pointer-events:none;opacity:0;transition:opacity 260ms ease;background:transparent}
 .sf-hair.sf-on{opacity:1}
 
+/* ---------- top band: 让 Windows 原生窗口按钮（− □ ×）融入画面 ----------
+   那块区域由操作系统绘制、在网页之上，CSS 盖不住它本身；但可以让它周围的
+   画面也变成同色，于是它读起来像一条刻意的顶栏，而不是"没盖住的缺口"。
+   63% × 76px ≈ 48px 完全不透明，足够覆盖 32–48px 的常见标题栏高度。 */
+.sf-topband{position:absolute;left:0;right:0;top:0;height:76px;pointer-events:none;
+  background:linear-gradient(180deg,#000 0%,#000 63%,rgba(0,0,0,.82) 78%,rgba(0,0,0,0) 100%)}
+
 /* ---------- vignette ---------- */
 .sf-vignette{position:absolute;inset:0;pointer-events:none;opacity:0;background:
   radial-gradient(120% 90% at 62% 34%,rgba(5,8,13,0) 30%,rgba(5,8,13,.55) 78%,rgba(5,8,13,.86) 100%),
@@ -119,6 +126,7 @@ window.__ModuleLoader__.load({
         '<div class="sf-mark"><b>DEEPSEEK</b><i>HARNESS</i></div>' +
         '<div class="sf-sub"><span class="sf-dot"></span>starting workspace</div>' +
       '</div>' +
+      '<div class="sf-topband"></div>' +
       '<div class="sf-flash"></div>' +
       '</div>';
 
