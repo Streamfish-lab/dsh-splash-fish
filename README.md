@@ -115,6 +115,22 @@ function apply(ctx) {
 
 **改 `lib/index.js` 必须重启应用**，刷新页面不算——注入表只在进程启动时收集一次。
 
+### 5. 为什么动画层必须挂到 `<body>` 下
+
+`shell.overlay` 这个槽位的包装层级 z-index 只有 20。祖先只要带 `transform`、`filter`、`contain` 或 `isolation`，就会创建层叠上下文，把后代的大 z-index **锁死在里面**——你在 `.sf-root` 上写 `2147483600` 也没用，对外等效只有 20。
+
+后果：任何挂在 `body` 下的第三方浮层（余额鲸鱼挂件是 `2147483100`、皮肤类常见 `2147483300`）都会压在启动动画上面。
+
+所以 `mountSplash` 不把节点留在槽位容器里，而是自己建一个 `div` 追加到 `document.body`：
+
+```js
+var stage = document.createElement("div");
+stage.innerHTML = MARKUP;
+document.body.appendChild(stage);      // ← 参与根上下文的排序
+```
+
+当前取值：动画层 `2147483600`，注入的启动封面 `2147483601`。
+
 ### 层叠顺序（从下到上）
 
 ```

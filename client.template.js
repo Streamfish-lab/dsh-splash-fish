@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
     var h = React.createElement;
 
     var CSS = `
-.sf-root{position:fixed;inset:0;z-index:2147483000;overflow:hidden;background:#05080d;
+.sf-root{position:fixed;inset:0;z-index:2147483600;overflow:hidden;background:#05080d;
   opacity:1;transform:scale(1);will-change:opacity,transform;cursor:default}
 .sf-root.sf-out{animation:sfExit 680ms cubic-bezier(.4,0,.25,1) forwards}
 @keyframes sfExit{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.045)}}
@@ -169,10 +169,19 @@ window.__ModuleLoader__.load({
     var TOTAL = 4400;   /* main timeline */
     var EXIT = 700;     /* cross-dissolve */
 
-    function mountSplash(host, opts) {
-      host.innerHTML = MARKUP;
+    function mountSplash(anchor, opts) {
+      /* 关键：不要留在 shell.overlay 的槽位容器里。
+         那个槽位包装元素所在层级的 z-index 只有 20，任何祖先只要带
+         transform / filter / contain / isolation 就会创建层叠上下文，
+         把后代的大 z-index 锁死在里面——对外等效只有 20，
+         于是被 2147483100 的第三方挂件（比如余额鲸鱼）压住。
+         挂到 body 下，才在根上下文中真正参与排序。 */
+      var stage = document.createElement("div");
+      stage.className = "sf-stage-host";
+      stage.innerHTML = MARKUP;
+      document.body.appendChild(stage);
 
-      var root = host.firstChild;
+      var root = stage.firstChild;
       var parts = root.querySelector(".sf-parts");
       var i, el, size, x, drift;
       for (i = 0; i < 24; i++) {
@@ -225,7 +234,7 @@ window.__ModuleLoader__.load({
           window.removeEventListener("keydown", onKey);
           window.removeEventListener("wheel", onWheel);
           if (hair) { hair.drop(); try { URL.revokeObjectURL(hair.url); } catch (e) {} }
-          host.innerHTML = "";
+          if (stage.parentNode) stage.parentNode.removeChild(stage);
         },
       };
     }
@@ -269,7 +278,7 @@ window.__ModuleLoader__.load({
           var style = document.createElement("style");
           style.id = "dsh-splash-fish-style";
           style.textContent = CSS +
-            ".dsh-splash-fish{position:fixed;inset:0;z-index:2147483000;overflow:hidden;" +
+            ".dsh-splash-fish{position:fixed;inset:0;z-index:2147483600;overflow:hidden;" +
             '--sf-img:url("__IMG_DATA_URI__")}';
           document.head.appendChild(style);
           return function () { style.remove(); };
