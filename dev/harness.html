@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>dsh-splash-fish · host harness</title>
+<style>html,body{margin:0;height:100%;background:#111}</style>
+</head>
+<body>
+<div id="err" style="position:fixed;left:0;top:0;z-index:9;color:#f66;font:12px monospace;white-space:pre-wrap"></div>
+<script>
+window.onerror = function (m, s, l, c, e) {
+  document.getElementById("err").textContent += "ERR: " + m + " @" + l + ":" + c + "\n" + (e && e.stack || "");
+};
+</script>
+<script>
+/* --- 极简 React mock：只覆盖本插件用到的四个 API --- */
+var effects = [];
+var React = {
+  createElement: function (tag, props) {
+    return { tag: tag, props: props || {} };
+  },
+  useRef: function (v) { return { current: v === undefined ? null : v }; },
+  useState: function (v) { return [v, function () {}]; },
+  useEffect: function (fn) { effects.push(fn); },
+};
+function require(name) {
+  if (name === "react") return React;
+  throw new Error("unexpected module: " + name);
+}
+/* --- 伪 dsh 客户端模块加载器 --- */
+window.__ModuleLoader__ = {
+  load: function (m) { window.__M = m; },
+};
+</script>
+<script src="../client.js"></script>
+<script>
+(function () {
+  var mod = window.__M.factory(require);
+  var Component = null;
+  var ctx = {
+    slots: {
+      inject: function (name, cb) { return cb(); },
+      register: function (meta, comp) { Component = comp; return function () {}; },
+    },
+    effect: function (fn) { return fn(); },
+  };
+  mod.apply(ctx);
+  if (!Component) throw new Error("component was never registered");
+
+  var host = document.createElement("div");
+  host.id = "overlay-host";
+  document.body.appendChild(host);
+
+  var vnode = Component();
+  if (vnode.props.className) host.className = vnode.props.className;
+  vnode.props.ref.current = host;   /* React would set the ref before effects run */
+  effects.forEach(function (fn) { fn(); });
+
+  document.title = "registered:" + (vnode.tag || "") + " mounted:" + host.children.length;
+})();
+</script>
+<script>
+/* ?t=毫秒 → 把整部片冻结在该时刻，方便逐帧核对 */
+var mt = /[?&]t=(\d+)/.exec(location.search);
+if (mt) {
+  setTimeout(function () {
+    var ms = parseInt(mt[1], 10);
+    var MAIN = 4400;
+    var root = document.querySelector('.sf-root');
+    if (ms >= MAIN && root) root.classList.add('sf-out');
+    /* ?nohair=1 → 摘掉视频层，用来和带头发层的同一帧做差分对比 */
+    if (/[?&]nohair=1/.test(location.search)) {
+      var h0 = document.querySelector('.sf-hair');
+      if (h0) h0.remove();
+    }
+    /* 视频层：暂停并 seek 到同一时刻，这样冻结帧里头发也是对的 */
+    var hv = document.querySelector('.sf-hair');
+    if (hv) {
+      try { hv.pause(); hv.currentTime = Math.min(ms, 3550) / 1000; } catch (e) {}
+      document.getElementById('err').textContent +=
+        'VIDEO readyState=' + hv.readyState + ' cls=[' + hv.className + '] t=' + hv.currentTime +
+        ' err=' + (hv.error ? hv.error.code : '-') + ' src=' + String(hv.src).slice(0, 24) + '\n';
+    } else {
+      document.getElementById('err').textContent += 'VIDEO not found in DOM\n';
+    }
+    document.querySelectorAll('.sf-root, .sf-root *').forEach(function (el) {
+      if (!el.getAnimations) return;
+      el.getAnimations().forEach(function (a) {
+        try {
+          a.currentTime = (a.animationName === 'sfExit') ? Math.max(0, ms - MAIN) : Math.min(ms, MAIN);
+          a.pause();
+        } catch (e) {}
+      });
+    });
+  }, 100);
+}
+</script>
+</body>
+</html>

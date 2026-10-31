@@ -1,6 +1,6 @@
 {
   "name": "dsh-splash-fish",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Startup film for DeepSeek Harness: the artwork develops out of the dark, a light bloom and a diagonal sheen pass over it, then the layer dissolves into the workspace.",
   "type": "module",
   "main": "lib/index.js",

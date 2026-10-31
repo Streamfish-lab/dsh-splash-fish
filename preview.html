@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dsh-splash-fish · 启动动画预览</title>
+<style>
+  :root{
+    --ink:#05080d;
+    --glow:#a9d6ff;
+    --glow-soft:#dcecff;
+    --dur:4400ms;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--ink);overflow:hidden;
+    font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+
+  #stage{position:fixed;inset:0;overflow:hidden;background:var(--ink);
+    will-change:opacity,transform}
+
+  /* ---------- 1. 图：显影 ---------- */
+  .bg{
+    position:absolute;inset:0;
+    background:url("assets/splash.webp") center/cover no-repeat;
+    filter:blur(28px) brightness(.28) saturate(.55);
+    transform:scale(1.14);
+    opacity:0;
+    will-change:filter,transform,opacity;
+  }
+  .play .bg{
+    animation:
+      bgFade 1250ms cubic-bezier(.22,.61,.36,1) 0ms forwards,
+      bgFocus 1400ms cubic-bezier(.22,.61,.36,1) 0ms forwards,
+      bgDrift 3000ms linear 1300ms forwards;
+  }
+  @keyframes bgFade{from{opacity:0}to{opacity:1}}
+  @keyframes bgFocus{
+    from{filter:blur(28px) brightness(.28) saturate(.55);transform:scale(1.14)}
+    to  {filter:blur(0px)  brightness(.92) saturate(1);   transform:scale(1.02)}
+  }
+  @keyframes bgDrift{
+    from{transform:scale(1.02)}
+    to  {transform:scale(1.06)}
+  }
+
+  /* ---------- 1b. 头发层：离线渲染的透明 WebM，跟着 .bg 一起缩放/模糊 ---------- */
+  .hair{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    pointer-events:none;opacity:0;transition:opacity .26s ease;
+  }
+  .hair.on{opacity:1}
+
+  /* ---------- 2. 压暗与边缘融合 ---------- */
+  .vignette{
+    position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 62% 34%, rgba(5,8,13,0) 30%, rgba(5,8,13,.55) 78%, rgba(5,8,13,.86) 100%),
+      linear-gradient(90deg, rgba(5,8,13,.72) 0%, rgba(5,8,13,.34) 26%, rgba(5,8,13,0) 52%),
+      linear-gradient(0deg, rgba(5,8,13,.55) 0%, rgba(5,8,13,0) 30%);
+    opacity:0;
+  }
+  .play .vignette{animation:softIn 1500ms ease 200ms forwards}
+  @keyframes softIn{from{opacity:0}to{opacity:1}}
+
+  /* ---------- 3. 角色光晕 ---------- */
+  .glow{
+    position:absolute;left:50%;top:50%;width:150vmin;height:150vmin;
+    margin:-75vmin 0 0 -75vmin;pointer-events:none;
+    background:radial-gradient(circle, rgba(169,214,255,.30) 0%, rgba(169,214,255,.12) 34%, rgba(169,214,255,0) 66%);
+    mix-blend-mode:screen;opacity:0;
+  }
+  .play .glow{animation:glowIn 1800ms cubic-bezier(.22,.61,.36,1) 260ms forwards}
+  @keyframes glowIn{
+    from{opacity:0;transform:scale(.72)}
+    to  {opacity:1;transform:scale(1)}
+  }
+
+  /* ---------- 4. 斜向扫光 ---------- */
+  .sheen{
+    position:absolute;inset:-20% -30%;pointer-events:none;
+    background:linear-gradient(104deg,
+      rgba(255,255,255,0) 38%,
+      rgba(220,236,255,.10) 46%,
+      rgba(220,236,255,.42) 50%,
+      rgba(220,236,255,.10) 54%,
+      rgba(255,255,255,0) 62%);
+    mix-blend-mode:screen;opacity:0;transform:translateX(-60%);
+  }
+  .play .sheen{animation:sheenRun 1500ms cubic-bezier(.4,0,.2,1) 1250ms forwards}
+  @keyframes sheenRun{
+    0%{opacity:0;transform:translateX(-62%)}
+    14%{opacity:1}
+    86%{opacity:.9}
+    100%{opacity:0;transform:translateX(62%)}
+  }
+
+  /* ---------- 5. 字标 ---------- */
+  .brand{
+    position:absolute;left:7.2vw;bottom:23vh;color:#f4f9ff;
+    max-width:44vw;
+  }
+  .rule{
+    width:0;height:1px;margin-bottom:22px;
+    background:linear-gradient(90deg, rgba(169,214,255,.95), rgba(169,214,255,0));
+  }
+  .play .rule{animation:ruleDraw 900ms cubic-bezier(.22,.61,.36,1) 420ms forwards}
+  @keyframes ruleDraw{from{width:0}to{width:min(220px,24vw)}}
+
+  .mark{
+    display:flex;align-items:baseline;gap:.42em;
+    font-size:clamp(22px,2.5vw,40px);font-weight:300;
+    letter-spacing:.30em;line-height:1;
+    opacity:0;transform:translateY(10px);
+    text-shadow:0 0 26px rgba(169,214,255,.35);
+  }
+  .mark b{font-weight:600;letter-spacing:.30em}
+  .mark i{
+    font-style:normal;font-size:.52em;font-weight:400;
+    letter-spacing:.52em;color:rgba(206,230,255,.78);
+  }
+  .play .mark{animation:markIn 1000ms cubic-bezier(.22,.61,.36,1) 620ms forwards}
+  @keyframes markIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  .sub{
+    margin-top:16px;font-size:clamp(11px,1vw,13px);
+    letter-spacing:.42em;text-transform:uppercase;
+    color:rgba(196,222,255,.62);
+    opacity:0;
+    display:flex;align-items:center;gap:12px;
+  }
+  .sub .dot{
+    width:4px;height:4px;border-radius:50%;background:rgba(169,214,255,.85);
+    box-shadow:0 0 10px rgba(169,214,255,.9);
+    animation:breathe 1400ms ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{opacity:.35}50%{opacity:1}}
+  .play .sub{animation:markIn 900ms cubic-bezier(.22,.61,.36,1) 900ms forwards}
+
+  /* ---------- 6. 粒子（呼应原图白点） ---------- */
+  .particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .p{
+    position:absolute;border-radius:50%;background:#eaf5ff;
+    opacity:0;filter:blur(.3px);
+    box-shadow:0 0 8px rgba(200,230,255,.55);
+  }
+
+  /* ---------- 7. 收场 ---------- */
+  .flash{
+    position:absolute;inset:0;pointer-events:none;background:#eef6ff;opacity:0;
+    mix-blend-mode:screen;
+  }
+  .play .flash{animation:flashHit 620ms ease-out 3320ms forwards}
+  @keyframes flashHit{0%{opacity:0}22%{opacity:.42}100%{opacity:0}}
+
+  .play.out #stage{animation:exit 700ms cubic-bezier(.4,0,.25,1) forwards}
+  @keyframes exit{
+    from{opacity:1;transform:scale(1)}
+    to  {opacity:0;transform:scale(1.045)}
+  }
+
+  /* ---------- 预览控制条 ---------- */
+  .hud{
+    position:fixed;left:0;right:0;bottom:0;padding:14px 20px;
+    display:flex;gap:16px;align-items:center;
+    font-size:12px;letter-spacing:.12em;color:rgba(210,232,255,.55);
+    background:linear-gradient(0deg, rgba(5,8,13,.85), rgba(5,8,13,0));
+    opacity:0;transition:opacity .4s ease;pointer-events:none;
+  }
+  .hud.show{opacity:1}
+  .hud button{
+    pointer-events:auto;cursor:pointer;
+    background:rgba(169,214,255,.10);color:#dbeaff;
+    border:1px solid rgba(169,214,255,.28);border-radius:2px;
+    padding:6px 14px;font-size:12px;letter-spacing:.14em;font-family:inherit;
+  }
+  .hud button:hover{background:rgba(169,214,255,.2)}
+  .hud .spacer{flex:1}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg">
+    <video class="hair" id="hair" src="assets/wall_25d.webm" autoplay muted playsinline preload="auto"></video>
+  </div>
+  <div class="vignette"></div>
+  <div class="glow"></div>
+  <div class="sheen"></div>
+  <div class="particles" id="particles"></div>
+  <div class="brand">
+    <div class="rule"></div>
+    <div class="mark"><b>DEEPSEEK</b><i>HARNESS</i></div>
+    <div class="sub"><span class="dot"></span>starting workspace</div>
+  </div>
+  <div class="flash"></div>
+</div>
+
+<div class="hud" id="hud">
+  <button id="replay">重播</button>
+  <span>点击画面任意处 / 任意按键 可跳过</span>
+  <span class="spacer"></span>
+  <span id="clock">0.0s</span>
+</div>
+
+<script>
+(function(){
+  var stage = document.getElementById('stage');
+  var hud   = document.getElementById('hud');
+  var clock = document.getElementById('clock');
+  var parts = document.getElementById('particles');
+  var DUR   = 4400;
+  var hair  = document.getElementById('hair');
+  var VIDEO = 3.6;                 /* 头发层时长，秒 */
+
+  hair.addEventListener('loadeddata', function(){ hair.classList.add('on'); }, {once:true});
+  hair.addEventListener('error', function(){ hair.style.display = 'none'; });
+
+  /* 粒子：24 个白点，向上升 */
+  for (var i=0;i<24;i++){
+    var el = document.createElement('span');
+    el.className = 'p';
+    var size = 1.5 + Math.random()*4.5;
+    var life = 1500 + Math.random()*1100;
+    var delay = 1500 + Math.random()*1400;
+    var x = 6 + Math.random()*88;
+    var drift = (Math.random()*2-1)*40;
+    el.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+x+'vw;bottom:-30px;'+
+      'animation:pRise '+life+'ms linear '+delay+'ms forwards;'+
+      '--dx:'+drift+'px;';
+    parts.appendChild(el);
+  }
+  var kf = document.createElement('style');
+  kf.textContent = '@keyframes pRise{'+
+    '0%{opacity:0;transform:translate(0,0) scale(.6)}'+
+    '12%{opacity:.85}'+
+    '80%{opacity:.5}'+
+    '100%{opacity:0;transform:translate(var(--dx),-72vh) scale(1)}'+
+  '}';
+  document.head.appendChild(kf);
+
+  var t0 = 0, raf = 0, finished = false, timer = 0;
+
+  function freezeAt(ms){
+    var MAIN = 4400;
+    if (ms >= MAIN) document.body.classList.add('out');   /* 让 exit 动画被创建出来 */
+    requestAnimationFrame(function(){
+      document.querySelectorAll('#stage *, #stage').forEach(function(el){
+        if (!el.getAnimations) return;
+        el.getAnimations().forEach(function(a){
+          try{
+            a.currentTime = (a.animationName === 'exit') ? Math.max(0, ms - MAIN) : Math.min(ms, MAIN);
+            a.pause();
+          }catch(e){}
+        });
+      });
+    });
+  }
+  function clearFreeze(){
+    document.querySelectorAll('#stage *, #stage').forEach(function(el){
+      if (!el.getAnimations) return;
+      el.getAnimations().forEach(function(a){ try{ a.play(); }catch(e){} });
+    });
+  }
+
+  function play(){
+    document.body.classList.remove('out');
+    document.body.classList.remove('play');
+    void stage.offsetWidth;             /* 强制回流，重启动画 */
+    hud.classList.remove('show');
+    finished = false;
+    document.body.classList.add('play');
+    try { hair.currentTime = 0; hair.play(); } catch (e) {}
+    t0 = performance.now();
+    tick();
+    timer = setTimeout(finish, DUR + 120);
+    setTimeout(function(){ if(!finished) hud.classList.add('show'); }, 1200);
+  }
+
+  function tick(){
+    if (finished) return;
+    clock.textContent = ((performance.now()-t0)/1000).toFixed(1)+'s';
+    raf = requestAnimationFrame(tick);
+  }
+
+  function finish(){
+    if (finished) return;
+    finished = true;
+    cancelAnimationFrame(raf);
+    document.body.classList.add('out');
+    try { hair.pause(); } catch (e) {}
+    setTimeout(function(){ document.body.classList.remove('play'); }, 720);
+    hud.classList.add('show');
+  }
+  function skip(){ if(!finished) finish(); }
+
+  document.getElementById('replay').addEventListener('click', function(e){
+    e.stopPropagation(); play();
+  });
+  window.addEventListener('click', skip);
+  window.addEventListener('keydown', skip);
+  window.addEventListener('wheel', skip, {passive:true});
+
+  /* ?t=1600 → 冻结在该毫秒，方便逐帧检查 */
+  var mt = /[?&]t=(\d+)/.exec(location.search);
+  if (mt){
+    document.body.classList.add('play');
+    frozenMode = true;
+    var ms = parseInt(mt[1],10);
+    setTimeout(function(){
+      try { hair.pause(); hair.currentTime = Math.min(ms, VIDEO * 1000 - 50) / 1000; } catch (e) {}
+      freezeAt(ms);
+      hud.classList.add('show');
+      document.body.classList.add('show-static');
+    }, 120);
+    var frozenMode = true;
+    window.__frozen = true;
+  } else {
+    play();
+  }
+})();
+</script>
+</body>
+</html>

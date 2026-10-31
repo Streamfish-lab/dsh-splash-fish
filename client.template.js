@@ -5,7 +5,13 @@
  * blooms from the character, a diagonal sheen sweeps across, dust rises,
  * then the whole layer cross-dissolves into the workspace.
  *
- * The character itself does not move at all -- only the frame around it animates.
+ * The hair gets its motion from an offline-rendered VP9+alpha WebM that is
+ * inlined as base64, decoded into a Blob at mount time and placed *inside*
+ * .sf-bg so it inherits the exact same scale/blur transform as the still.
+ * It plays once, then removes itself -- after 3.6 s the layer is gone and the
+ * compositor cost drops back to zero.
+ *
+ * No other part of the figure moves: no drift, no sway, no breathing.
  *
  * Skip: click / any key / wheel. Plays once per page load, then unmounts.
  */
@@ -34,6 +40,13 @@ window.__ModuleLoader__.load({
 @keyframes sfFocus{from{filter:blur(28px) brightness(.28) saturate(.55);transform:scale(1.14)}
   to{filter:blur(0) brightness(.92) saturate(1);transform:scale(1.02)}}
 @keyframes sfDrift{from{transform:scale(1.02)}to{transform:scale(1.06)}}
+
+/* ---------- hair video: a sibling of the still, inside .sf-bg ----------
+   object-fit:cover must stay in sync with the parent's background-size:cover,
+   otherwise the hair layer would be offset by a few pixels. */
+.sf-hair{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  pointer-events:none;opacity:0;transition:opacity 260ms ease;background:transparent}
+.sf-hair.sf-on{opacity:1}
 
 /* ---------- vignette ---------- */
 .sf-vignette{position:absolute;inset:0;pointer-events:none;opacity:0;background:
@@ -109,6 +122,50 @@ window.__ModuleLoader__.load({
       '<div class="sf-flash"></div>' +
       '</div>';
 
+    /* hair_wave.webm, base64 (VP9 + alpha, 1920x1080, 30 fps, 3.6 s).
+       Empty string when build.py could not find the file -> layer is skipped. */
+    var HAIR_B64 = "__HAIR_WEBM_B64__";
+
+    function attachHair(root) {
+      if (!HAIR_B64) return null;
+      var bg = root.querySelector(".sf-bg");
+      if (!bg) return null;
+
+      var url;
+      try {
+        var bin = atob(HAIR_B64), n = bin.length, u8 = new Uint8Array(n);
+        for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
+        url = URL.createObjectURL(new Blob([u8], { type: "video/webm" }));
+      } catch (e) {
+        return null;
+      }
+
+      var v = document.createElement("video");
+      v.className = "sf-hair";
+      v.muted = true;
+      v.defaultMuted = true;
+      v.playsInline = true;
+      v.setAttribute("muted", "");
+      v.setAttribute("playsinline", "");
+      v.setAttribute("preload", "auto");
+      v.setAttribute("aria-hidden", "true");
+      v.src = url;
+
+      function drop() {
+        v.style.display = "none";
+        try { v.pause(); } catch (e) {}
+      }
+      v.addEventListener("loadeddata", function () { v.classList.add("sf-on"); }, { once: true });
+      v.addEventListener("ended", drop);       /* last frame == original art, so no jump */
+      v.addEventListener("error", drop);       /* decode unsupported -> stay on the still */
+
+      bg.appendChild(v);
+      var pr = v.play();
+      if (pr && pr.catch) pr.catch(drop);
+
+      return { el: v, url: url, drop: drop };
+    }
+
     var TOTAL = 4400;   /* main timeline */
     var EXIT = 700;     /* cross-dissolve */
 
@@ -131,6 +188,12 @@ window.__ModuleLoader__.load({
         parts.appendChild(el);
       }
 
+      var hair = attachHair(root);
+
+      /* 摘掉 host 半边注入的启动封面。此刻 .sf-root 已经铺满整窗、底色与封面完全一致，
+         所以摘除的瞬间看不出接缝。没有这个全局函数（比如宿主版本不支持注入行）就跳过。 */
+      try { if (window.__dshSfDrop) window.__dshSfDrop(); } catch (e) {}
+
       /* start on next frame so the first paint is the dark, blurred state */
       requestAnimationFrame(function () { root.classList.add("sf-play"); });
 
@@ -140,6 +203,7 @@ window.__ModuleLoader__.load({
         if (done) return;
         done = true;
         timers.forEach(clearTimeout);
+        if (hair) hair.drop();          /* 跳过时立刻停播，不再解码 */
         root.classList.add("sf-out");
         timers.push(setTimeout(function () { if (opts.onDone) opts.onDone(); }, EXIT));
       }
@@ -160,6 +224,7 @@ window.__ModuleLoader__.load({
           root.removeEventListener("pointerdown", finish);
           window.removeEventListener("keydown", onKey);
           window.removeEventListener("wheel", onWheel);
+          if (hair) { hair.drop(); try { URL.revokeObjectURL(hair.url); } catch (e) {} }
           host.innerHTML = "";
         },
       };
