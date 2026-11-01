@@ -27,50 +27,6 @@ git clone https://github.com/Streamfish-lab/dsh-splash-fish.git $dest
 
 这样装完，配置由应用自己写，不会破坏 JSON。
 
-## 兜底：应用内装不了的时候
-
-只有在界面里装不进去时，才走手动路线。桌面版的 `desktop` profile 是 Electron 应用独占的，命令行 `dsh plugin --profile desktop add` 会被直接拒绝。
-
-**第一步**，克隆到一个长期保留的目录。profile 里记的是 `link:` 路径，目录挪走或删掉，插件就失效了。
-
-```powershell
-$dest = "$env:USERPROFILE\.dsh\bundles\dsh-splash-fish"
-git clone https://github.com/Streamfish-lab/dsh-splash-fish.git $dest
-```
-
-**第二步**，改 `%USERPROFILE%\.dsh\profiles\desktop\package.json`。
-
-> ⚠️ **改之前必须复制一份 `package.json.bak`。** 这个文件写坏了 dsh 就起不来。
-> 路径一律用**正斜杠** `C:/Users/...`，不要用反斜杠——JSON 里 `\d` 不是合法转义，
-> 整个文件会解析失败。改完用任意 JSON 校验工具过一遍再让用户重启。
-
-两处都要动：
-
-```jsonc
-{
-  "dependencies": {
-    "dsh-splash-fish": "link:C:/Users/<用户名>/.dsh/bundles/dsh-splash-fish"
-  },
-  "dsh": {
-    "profile": {
-      "bundles": [
-        "dsh-splash-fish"
-      ]
-    }
-  }
-}
-```
-
-只往 `dependencies` 里加是不够的，`dsh.profile.bundles` 里没有这个包名，loader 不会去挂载它。
-
-**第三步**，建目录链接。Windows 上用 Junction 不需要管理员权限，`mklink /D` 需要。
-
-```powershell
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.dsh\profiles\desktop\node_modules\dsh-splash-fish" -Target $dest
-```
-
-**第四步**，让用户彻底退出应用再打开。托盘图标右键退出，关窗口不算。
-
 ## Web 版怎么装
 
 ```bash
@@ -95,7 +51,11 @@ dsh plugin --profile web add github:Streamfish-lab/dsh-splash-fish
 
 ## 卸载
 
-从 `dependencies` 和 `dsh.profile.bundles` 里删掉 `dsh-splash-fish`，删掉 `node_modules` 下那条链接，重启。
+让用户在应用里操作：设置 → 插件 → 找到 `dsh-splash-fish` → 移除，然后彻底退出再打开。
+
+**不要手改 `package.json` 来卸载。** 删一项时漏掉前面的逗号，照样起不来。
+
+如果界面里移不掉，直接删掉插件目录 `%USERPROFILE%\.dsh\bundles\dsh-splash-fish` 也行——`link:` 的目标没了，插件就加载不了。配置里留个失效条目一般不挡启动。
 
 ## 如果要改代码
 

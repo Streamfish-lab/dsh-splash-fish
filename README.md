@@ -49,18 +49,15 @@ Agent 拿到链接会自己去仓库里翻 AGENTS.md，那里写了具体步骤�
 > ⚠️ **装的时候不要手改 `profiles\desktop\package.json`。** 那是 dsh 的启动配置，一个逗号写错、或者 Windows 路径的反斜杠没转义，dsh 就再也起不来了，报 `Unexpected token ... is not valid JSON`。已经有人踩过这个坑。用应用自带的"设置 → 插件 → 添加插件"，让应用自己写配置。
 
 这里面的重点是 desktop 版不能用命令行 `dsh plugin add`——那个 profile 是 Electron 独占的，会直接被拒，不知道这点会白试很久：
-这里面的重点是 desktop 版不能用命令行 dsh plugin add——那个 profile 是 Electron 独占的，会直接被拒，不知道这点会白试很久：
 
 ```
 帮我安装这个 DeepSeek Harness 插件：https://github.com/Streamfish-lab/dsh-splash-fish
 
 1. 克隆到 %USERPROFILE%\.dsh\bundles\dsh-splash-fish
    （目录要长期留着，插件是 link 引用的，移走就失效）
-2. 改 %USERPROFILE%\.dsh\profiles\desktop\package.json：
-   dependencies 里加 "dsh-splash-fish": "link:<上一步的路径>"
-   dsh.profile.bundles 数组里加 "dsh-splash-fish"
-3. 在 profiles\desktop\node_modules\ 下建一个指向它的目录链接
-4. 告诉我需要重启应用
+2. 装的时候走应用界面，不要手改配置文件：
+   设置 → 插件 → 添加插件，填上一步那个路径
+3. 告诉我需要彻底退出应用再打开
 ```
 
 细节写在 [AGENTS.md](AGENTS.md) 里，Agent 会自己看。
