@@ -2,9 +2,34 @@
 
 这个仓库是 DeepSeek Harness 的插件，包名 `dsh-splash-fish`。要做的事情只有一件：把它注册进 profile，然后重启宿主。
 
-## 桌面版怎么装
+## 桌面版：优先用应用内安装
 
-桌面版的 `desktop` profile 是 Electron 应用独占的，命令行 `dsh plugin --profile desktop add` 会被直接拒绝，只能手动链接。
+**不要手改 `profiles\desktop\package.json`。** 那是 dsh 的启动配置，手改 JSON 只要漏一个逗号、或者 Windows 路径的反斜杠没转义成 `\\`，应用就再也起不来了，报 `Unexpected token ... is not valid JSON`。已经有人因此把 dsh 搞崩过。
+
+正确做法是走应用自带的插件安装界面，让应用自己写配置。
+
+**第一步**，把仓库放到一个长期保留的目录：
+
+```powershell
+$dest = "$env:USERPROFILE\.dsh\bundles\dsh-splash-fish"
+git clone https://github.com/Streamfish-lab/dsh-splash-fish.git $dest
+```
+
+**第二步**，让用户操作界面：
+
+1. 打开 DeepSeek Harness
+2. 左侧栏 → 设置（齿轮图标，一般在最下面）→ 插件
+3. 右上角 `+ 添加插件`
+4. 粘贴 `$dest` 的绝对路径，要指到有 `package.json` 的那一层
+5. 装完重启
+
+**第三步**，告诉用户彻底退出应用再打开。托盘图标右键退出，关窗口不算。
+
+这样装完，配置由应用自己写，不会破坏 JSON。
+
+## 兜底：应用内装不了的时候
+
+只有在界面里装不进去时，才走手动路线。桌面版的 `desktop` profile 是 Electron 应用独占的，命令行 `dsh plugin --profile desktop add` 会被直接拒绝。
 
 **第一步**，克隆到一个长期保留的目录。profile 里记的是 `link:` 路径，目录挪走或删掉，插件就失效了。
 
@@ -13,7 +38,13 @@ $dest = "$env:USERPROFILE\.dsh\bundles\dsh-splash-fish"
 git clone https://github.com/Streamfish-lab/dsh-splash-fish.git $dest
 ```
 
-**第二步**，改 `%USERPROFILE%\.dsh\profiles\desktop\package.json`。改之前先备份一份。两处都要动：
+**第二步**，改 `%USERPROFILE%\.dsh\profiles\desktop\package.json`。
+
+> ⚠️ **改之前必须复制一份 `package.json.bak`。** 这个文件写坏了 dsh 就起不来。
+> 路径一律用**正斜杠** `C:/Users/...`，不要用反斜杠——JSON 里 `\d` 不是合法转义，
+> 整个文件会解析失败。改完用任意 JSON 校验工具过一遍再让用户重启。
+
+两处都要动：
 
 ```jsonc
 {
