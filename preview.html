@@ -43,6 +43,25 @@
     to  {transform:scale(1.06)}
   }
 
+  /* ---------- 0. 淡出之后露出的东西 ----------
+     真实插件淡出后露出的是 dsh 的工作区，这里用一个线框示意，
+     免得预览里淡完是一片黑、跟实际观感对不上。 */
+  #appmock{position:fixed;inset:0;background:#14161c;display:flex}
+  #appmock .sb{width:56px;background:#0f1115;border-right:1px solid rgba(255,255,255,.06)}
+  #appmock .main{flex:1;padding:36px 56px;display:flex;flex-direction:column;gap:14px;justify-content:center}
+  #appmock .line{height:10px;border-radius:5px;background:rgba(255,255,255,.07)}
+  #appmock .w80{width:80%} #appmock .w55{width:55%} #appmock .w35{width:35%}
+  #appmock .composer{margin-top:auto;height:54px;border-radius:12px;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+
+  /* ---------- 0b. 右上角窗口按钮（Windows 原生控件的位置和样式） ---------- */
+  /* 真实环境里这三个按钮由操作系统绘制，永远在最上层，动画淡出也不会消失。
+     所以这里放在 stage 外面，z-index 拉到最高。 */
+  .winbar{position:fixed;top:0;right:0;width:138px;height:40px;z-index:2147483647;
+    display:flex;align-items:center;justify-content:space-evenly;pointer-events:none}
+  .winbar span{color:rgba(255,255,255,.78);font:14px/1 "Segoe UI",system-ui,sans-serif;
+    letter-spacing:0}
+
   /* ---------- 1b. 头发层：离线渲染的透明 WebM，跟着 .bg 一起缩放/模糊 ---------- */
   .hair{
     position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
@@ -178,6 +197,18 @@
 </style>
 </head>
 <body>
+<div id="appmock">
+  <div class="sb"></div>
+  <div class="main">
+    <div class="line w35"></div>
+    <div class="line w80"></div>
+    <div class="line w55"></div>
+    <div class="line w80"></div>
+    <div class="line w35"></div>
+    <div class="composer"></div>
+  </div>
+</div>
+
 <div id="stage">
   <div class="bg">
     <video class="hair" id="hair" src="assets/wall_25d.webm" autoplay muted playsinline preload="auto"></video>
@@ -193,6 +224,8 @@
   </div>
   <div class="flash"></div>
 </div>
+
+<div class="winbar"><span>&#8722;</span><span>&#9633;</span><span>&#215;</span></div>
 
 <div class="hud" id="hud">
   <button id="replay">重播</button>
@@ -265,14 +298,12 @@
     document.body.classList.remove('out');
     document.body.classList.remove('play');
     void stage.offsetWidth;             /* 强制回流，重启动画 */
-    hud.classList.remove('show');
     finished = false;
     document.body.classList.add('play');
     try { hair.currentTime = 0; hair.play(); } catch (e) {}
     t0 = performance.now();
     tick();
     timer = setTimeout(finish, DUR + 120);
-    setTimeout(function(){ if(!finished) hud.classList.add('show'); }, 1200);
   }
 
   function tick(){
@@ -288,12 +319,15 @@
     document.body.classList.add('out');
     try { hair.pause(); } catch (e) {}
     setTimeout(function(){ document.body.classList.remove('play'); }, 720);
-    hud.classList.add('show');
   }
   function skip(){ if(!finished) finish(); }
 
   document.getElementById('replay').addEventListener('click', function(e){
     e.stopPropagation(); play();
+  });
+  /* 预览控件平时不显示，按 H 才出来，免得挡住画面。 */
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'h' || e.key === 'H') hud.classList.toggle('show');
   });
   window.addEventListener('click', skip);
   window.addEventListener('keydown', skip);
@@ -308,7 +342,6 @@
     setTimeout(function(){
       try { hair.pause(); hair.currentTime = Math.min(ms, VIDEO * 1000 - 50) / 1000; } catch (e) {}
       freezeAt(ms);
-      hud.classList.add('show');
       document.body.classList.add('show-static');
     }, 120);
     var frozenMode = true;

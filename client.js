@@ -27,8 +27,14 @@ window.__ModuleLoader__.load({
   /* 永不接收鼠标：即使这一层因为任何原因残留，也绝不能挡住界面操作。
      跳过改为在 window 上捕获相位监听（见 mountSplash）。 */
   pointer-events:none}
-.sf-root.sf-out{animation:sfExit 680ms cubic-bezier(.4,0,.25,1) forwards}
+.sf-root.sf-out{animation:sfExit 620ms cubic-bezier(.4,0,.25,1) forwards}
 @keyframes sfExit{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.045)}}
+
+/* 收尾时字标和粒子提前退场。图片本身偏暗，整体淡出到一半时它已经看不见了，
+   但白色的字和亮点还会挂在那里，看起来像人物先走、文字留下。先让它们走。 */
+.sf-root.sf-out .sf-brand,
+.sf-root.sf-out .sf-parts{animation:sfFadeOut 240ms ease forwards}
+@keyframes sfFadeOut{from{opacity:1}to{opacity:0}}
 
 /* ---------- artwork: develop from the dark, then hold ----------------------
    starts at 1.14 and settles at 1.02 over 1.4 s, then only a very slow
