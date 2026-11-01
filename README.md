@@ -26,7 +26,14 @@
 
 ## 安装
 
-**安装**：把下面这段发给 Agent。
+**安装**：其实一句话就够。
+```
+帮我安装这个 DeepSeek Harness 插件：https://github.com/Streamfish-lab/dsh-splash-fish
+```
+
+Agent 拿到链接会自己去仓库里翻 AGENTS.md，那里写了具体步骤。一般来说只发了这一句就可以装好。
+
+如果它卡住、或者装完没反应，再把下面这段一起发过去。这里面的重点是 desktop 版不能用命令行 dsh plugin add——那个 profile 是 Electron 独占的，会直接被拒，不知道这点会白试很久：
 
 ```
 帮我安装这个 DeepSeek Harness 插件：https://github.com/Streamfish-lab/dsh-splash-fish
