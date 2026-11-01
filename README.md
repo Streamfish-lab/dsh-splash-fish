@@ -1,6 +1,6 @@
 # dsh-splash-fish
 
-把一张自己的插画做成 DeepSeek Harness 的开屏动画：从黑场里显影，头发有真实的飘动，然后淡出进工作区。
+把一张自己的插画做成 DeepSeek Harness 的开屏动画：从黑场里显影，人物为动态效果，然后淡出进工作区。
 
 <p align="center"><img src="preview/poster.jpg" width="860" alt="启动画面"></p>
 
