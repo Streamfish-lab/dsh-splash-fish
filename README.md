@@ -3,6 +3,7 @@
 把一张自己的插画做成 DeepSeek Harness 的开屏动画：从黑场里显影，人物为动态效果，然后淡出进工作区。
 
 <p align="center"><img src="preview/poster.jpg" width="860" alt="启动画面"></p>
+图显示不出来是 GitHub 图片代理的问题，可以直接看 preview/splash-25d-preview.mp4
 
 - [`preview/splash-25d-preview.mp4`](preview/splash-25d-preview.mp4) 完整启动动画，5.07 秒
 - [`preview/hair_wave_preview.mp4`](preview/hair_wave_preview.mp4) 上一版的头发位移层，3.6 秒，留着对照
