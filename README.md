@@ -11,6 +11,16 @@
 
 纯客户端插件，挂在 `shell.overlay` 槽位上，每次页面加载只播一次，播完自己卸载，等不及就点一下屏幕、按任意键、或者滚一下滚轮，立刻进收尾——急着开始干活的时候不用干看着。那一下点击会被吃掉，不会漏到下面的界面上。
 
+## 30 秒上手
+
+插件已经装好，想换成自己的画面：
+
+1. 把图片拖到 `换自己的图.bat` 上松手（第一次要装 Python 和 Pillow，见文末）
+2. 跑完把生成的 `client.js` 复制到插件目录
+3. 重启 dsh
+
+想回到最初那版：从仓库重新下一份覆盖就行。
+
 ## 这几个地方和常见的开机动画不一样
 
 **dsh 自带的那张启动图，我给它压掉了。** dsh 启动时会先画一张：HARNESS、转圈、Loading plugins。不少同类插件在 README 里直接写了压不住它，动画前面总要闪一下。我没走客户端那条路——客户端插件被实例化的时候，那张图早就画完了，追不上。我用 `webserver/index-inject` 在 index.html 解析阶段就把封面铺上去，比任何客户端插件都早。
@@ -34,7 +44,12 @@
 
 Agent 拿到链接会自己去仓库里翻 AGENTS.md，那里写了具体步骤。一般来说只发了这一句就可以装好。
 
-如果它卡住、或者装完没反应，再把下面这段一起发过去。这里面的重点是 desktop 版不能用命令行 dsh plugin add——那个 profile 是 Electron 独占的，会直接被拒，不知道这点会白试很久：
+如果它卡住、或者装完没反应，再把下面这段一起发过去。
+
+> ⚠️ **装的时候不要手改 `profiles\desktop\package.json`。** 那是 dsh 的启动配置，一个逗号写错、或者 Windows 路径的反斜杠没转义，dsh 就再也起不来了，报 `Unexpected token ... is not valid JSON`。已经有人踩过这个坑。用应用自带的"设置 → 插件 → 添加插件"，让应用自己写配置。
+
+这里面的重点是 desktop 版不能用命令行 `dsh plugin add`——那个 profile 是 Electron 独占的，会直接被拒，不知道这点会白试很久：
+这里面的重点是 desktop 版不能用命令行 dsh plugin add——那个 profile 是 Electron 独占的，会直接被拒，不知道这点会白试很久：
 
 ```
 帮我安装这个 DeepSeek Harness 插件：https://github.com/Streamfish-lab/dsh-splash-fish
@@ -148,6 +163,25 @@ python3 build.py
 第一步的深度图需要 `transformers`，装不上会自动退回用亮度凑一张。第二步的 SAM2 需要 torch 和权重 `sam2.1_hiera_large.pt`。
 
 说清楚一点：仓库里现在这张 mask 是凑出来的，不是 SAM2 的输出。生成的时候手上没有 GPU 环境，用的是椭圆约束加颜色阈值再挖掉脸和肩膀。发丝之间的空隙是糊的。你要是自己跑一遍 `01_sam2_hair_mask.py` 换掉它，边缘会好很多。
+
+## 更新
+
+**不会自动更新。** 装在本地的那一份就是当时那份，dsh 不会去仓库检查新版。
+
+**git clone 装的**：
+
+```bash
+cd %USERPROFILE%\.dsh\bundles\dsh-splash-fish
+git pull
+```
+
+然后彻底退出 dsh 再打开。
+
+**下载压缩包装的**：重新下一份覆盖。解压时别选"清空目标文件夹"，`assets\` 那几 MB 得留着，构建要用。
+
+**换成自己图的人注意**：更新会用新版的 `client.js` 覆盖你现在这个，画面回到默认。重新拖一次图就能换回来。
+
+**怎么知道有没有新版**：[Releases](https://github.com/Streamfish-lab/dsh-splash-fish/releases) 页面。
 
 ## 版本历史
 
