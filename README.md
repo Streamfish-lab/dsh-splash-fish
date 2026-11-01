@@ -26,7 +26,7 @@
 
 ## 安装
 
-**让别人装**：把下面这段发给 Agent。
+**安装**：把下面这段发给 Agent。
 
 ```
 帮我安装这个 DeepSeek Harness 插件：https://github.com/Streamfish-lab/dsh-splash-fish
