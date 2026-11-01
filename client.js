@@ -27,14 +27,14 @@ window.__ModuleLoader__.load({
   /* 永不接收鼠标：即使这一层因为任何原因残留，也绝不能挡住界面操作。
      跳过改为在 window 上捕获相位监听（见 mountSplash）。 */
   pointer-events:none}
-.sf-root.sf-out{animation:sfExit 620ms cubic-bezier(.4,0,.25,1) forwards}
-@keyframes sfExit{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.045)}}
+/* 淡出不用 CSS 动画，由 JS 逐帧写 opacity，见 finish()。
+   这里只负责把混合模式关掉：screen 混合下光晕不跟随父级 opacity 变暗，
+   会留下"人淡没了光还亮着"的残影。 */
+.sf-root.sf-out .sf-glow,
+.sf-root.sf-out .sf-sheen{mix-blend-mode:normal}
 
 /* 收尾时字标和粒子提前退场。图片本身偏暗，整体淡出到一半时它已经看不见了，
    但白色的字和亮点还会挂在那里，看起来像人物先走、文字留下。先让它们走。 */
-.sf-root.sf-out .sf-brand,
-.sf-root.sf-out .sf-parts{animation:sfFadeOut 240ms ease forwards}
-@keyframes sfFadeOut{from{opacity:1}to{opacity:0}}
 
 /* ---------- artwork: develop from the dark, then hold ----------------------
    starts at 1.14 and settles at 1.02 over 1.4 s, then only a very slow
@@ -165,7 +165,9 @@ window.__ModuleLoader__.load({
         try { v.pause(); } catch (e) {}
       }
       v.addEventListener("loadeddata", function () { v.classList.add("sf-on"); }, { once: true });
-      v.addEventListener("ended", drop);       /* last frame == original art, so no jump */
+      /* 视频 3.6 秒，动画 4.4 秒。这里原本挂的是 ended→drop，视频一播完就把人物摘掉，
+         结果人物比背景早消失将近一秒。改成循环播放，播到淡出结束由 cleanup 统一收。 */
+      v.loop = true;
       v.addEventListener("error", drop);       /* decode unsupported -> stay on the still */
 
       bg.appendChild(v);
@@ -176,7 +178,7 @@ window.__ModuleLoader__.load({
     }
 
     var TOTAL = 4400;   /* main timeline */
-    var EXIT = 700;     /* cross-dissolve */
+    var EXIT = 800;     /* cross-dissolve */
 
     function mountSplash(anchor, opts) {
       /* 关键：不要留在 shell.overlay 的槽位容器里。
@@ -215,9 +217,12 @@ window.__ModuleLoader__.load({
 
       var hair = attachHair(root);
 
-      /* 摘掉 host 半边注入的启动封面。此刻 .sf-root 已经铺满整窗、底色与封面完全一致，
-         所以摘除的瞬间看不出接缝。没有这个全局函数（比如宿主版本不支持注入行）就跳过。 */
-      try { if (window.__dshSfDrop) window.__dshSfDrop(); } catch (e) {}
+      /* 摘掉 host 半边注入的启动封面。不能立刻摘：背景层是从 opacity:0 淡入 1250ms 的，
+         封面 350ms 就撤走的话，中间会露出一段没人管的黑屏。
+         推迟到背景亮过三成，再让封面用 900ms 慢慢透下去，两段交叉起来才没有断层。 */
+      setTimeout(function () {
+        try { if (window.__dshSfDrop) window.__dshSfDrop(); } catch (e) {}
+      }, 380);
 
       /* start on next frame so the first paint is the dark, blurred state */
       requestAnimationFrame(function () { root.classList.add("sf-play"); });
@@ -241,11 +246,65 @@ window.__ModuleLoader__.load({
       function finish() {
         if (done) return;
         done = true;
-        if (hair) hair.drop();          /* 跳过时立刻停播，不再解码 */
         root.classList.add("sf-out");
-        timers.push(setTimeout(function () { if (opts.onDone) opts.onDone(); }, EXIT));
-        /* 兜底：就算 onDone 因为宿主重渲染没被调用，到点也强制摘掉整层 */
-        timers.push(setTimeout(cleanup, EXIT + 1200));
+
+        var now = (window.performance && performance.now)
+          ? function () { return performance.now(); }
+          : function () { return Date.now(); };
+        var t0 = now();
+
+        /* 把 root 的直接子节点列出来，淡出时逐个写同一个透明度。
+           这样人物、背景、文字、光晕走的是同一个数字，不存在谁先谁后。 */
+        var kids = [];
+        for (var k = 0; k < root.children.length; k++) kids.push(root.children[k]);
+
+        /* 第一阶段：内容淡到全透明，但 root 自己的深色底留着，继续挡着宿主界面。
+           第二阶段：等宿主界面就绪，再把底也撤掉。 */
+        function step() {
+          var p = Math.min(1, (now() - t0) / EXIT);
+          var e = 1 - (1 - p) * (1 - p) * (1 - p);          /* easeOutCubic */
+          for (var n = 0; n < kids.length; n++) {
+            /* animation 必须一起掐掉：.sf-bg 上有 sfFade ... forwards，
+               动画的 forwards 状态优先级高于内联样式，光写 opacity 根本压不住，
+               表现就是背景和人物怎么都不淡、只有没挂动画的文字在消失。 */
+            kids[n].style.animation = "none";
+            kids[n].style.transition = "none";
+            kids[n].style.opacity = String(1 - e);
+          }
+          if (p < 1) { requestAnimationFrame(step); return; }
+          waitReady();
+        }
+
+        function ready() {
+          if (document.querySelector("[data-dsh-boot]")) return false;
+          /* 别再按文字判断了：宿主的加载页只是被压成透明，文字还在 DOM 里，
+             读 innerText 永远命中，等于永远不就绪，只能死等到超时。 */
+          var r = document.querySelector("#root");
+          return !!(r && r.children.length && r.getBoundingClientRect().height > 200);
+        }
+
+        function waitReady() {
+          /* innerText 触发布局，不能每帧调，150ms 一次足够 */
+          var deadline = now() + 1200;
+          var iv = setInterval(function () {
+            if (ready() || now() > deadline) { clearInterval(iv); release(); }
+          }, 150);
+        }
+
+        function release() {
+          root.style.transition = "opacity 400ms ease";
+          root.style.opacity = "0";
+          setTimeout(function () { if (opts.onDone) opts.onDone(); }, 420);
+        }
+
+        requestAnimationFrame(step);
+
+        /* 兜底：窗口在后台时 requestAnimationFrame 会被节流，不能指望它 */
+        timers.push(setTimeout(function () {
+          root.style.opacity = "0";
+          if (opts.onDone) opts.onDone();
+        }, EXIT + 2200));
+        timers.push(setTimeout(cleanup, EXIT + 3400));
       }
       timers.push(setTimeout(finish, TOTAL));
 
