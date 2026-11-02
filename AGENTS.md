@@ -27,6 +27,38 @@ git clone https://github.com/Streamfish-lab/dsh-splash-fish.git $dest
 
 这样装完，配置由应用自己写，不会破坏 JSON。
 
+## macOS 怎么装
+
+**先确认机器能不能跑桌面版**：必须是 **Apple 芯片（M 系列）**，系统 macOS 13 以上。Intel Mac 没有官方桌面版，只能走 Web 版，见下一节。
+
+**路径换成 Mac 的写法**（没有 `%USERPROFILE%`，也没有 PowerShell）：
+
+```bash
+DEST="$HOME/.dsh/bundles/dsh-splash-fish"
+git clone https://github.com/Streamfish-lab/dsh-splash-fish.git "$DEST"
+```
+
+**装法跟 Windows 一样走界面**：设置 → 插件 → 添加插件，填展开后的绝对路径 `/Users/<用户名>/.dsh/bundles/dsh-splash-fish`，要指到有 `package.json` 的那一层。
+
+**不要用 `ln -s` 手动建链接，也不要改 `package.json`。** 界面自己会处理。Windows 上那些 `New-Item -ItemType Junction` 的命令在 Mac 上不适用，别照抄。
+
+**`换自己的图.bat` 在 Mac 上用不了**，那是 Windows 批处理。换图改成直接跑命令：
+
+```bash
+cd "$HOME/.dsh/bundles/dsh-splash-fish"
+python3 tools/make_from_image.py 我的图.jpg
+```
+
+跑完不用复制文件——脚本就在插件目录里跑，生成的 `client.js` 原地覆盖，彻底退出 dsh 再打开就生效。
+
+**依赖**：
+
+```bash
+python3 -m pip install pillow        # 换图必需
+```
+
+**Mac 上有个好处**：插件目录就是运行目录，改完 `client.js` 重启就生效，不像某些装法还要往另一个地方复制。
+
 ## Web 版怎么装
 
 ```bash
