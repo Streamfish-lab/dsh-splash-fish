@@ -12,7 +12,8 @@
 
 ```powershell
 $dest = "$env:USERPROFILE\.dsh\bundles\dsh-splash-fish"
-git clone https://github.com/Streamfish-lab/dsh-splash-fish.git $dest
+# --depth 1 = 只拉最新一版，不拉历史，国内能快一倍
+git clone --depth 1 https://github.com/Streamfish-lab/dsh-splash-fish.git $dest
 ```
 
 **第二步**，让用户操作界面：
@@ -35,7 +36,8 @@ git clone https://github.com/Streamfish-lab/dsh-splash-fish.git $dest
 
 ```bash
 DEST="$HOME/.dsh/bundles/dsh-splash-fish"
-git clone https://github.com/Streamfish-lab/dsh-splash-fish.git "$DEST"
+# --depth 1 = 只拉最新一版，不拉历史
+git clone --depth 1 https://github.com/Streamfish-lab/dsh-splash-fish.git "$DEST"
 ```
 
 **装法跟 Windows 一样走界面**：设置 → 插件 → 添加插件，填展开后的绝对路径 `/Users/<用户名>/.dsh/bundles/dsh-splash-fish`，要指到有 `package.json` 的那一层。

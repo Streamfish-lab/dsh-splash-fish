@@ -3,10 +3,10 @@
 把一张自己的插画做成 DeepSeek Harness 的开屏动画：从黑场里显影，人物为动态效果，然后淡出进工作区。
 
 <p align="center"><img src="preview/poster.jpg" width="860" alt="启动画面"></p>
-图显示不出来是 GitHub 图片代理的问题，可以直接看 preview/splash-25d-preview.mp4
+图显示不出来是 GitHub 图片代理的问题，可以直接看 [启动动画视频](https://github.com/Streamfish-lab/dsh-splash-fish/releases/download/v0.3.0/splash-25d-preview.mp4)
 
-- [`preview/splash-25d-preview.mp4`](preview/splash-25d-preview.mp4) 完整启动动画，5.07 秒
-- [`preview/hair_wave_preview.mp4`](preview/hair_wave_preview.mp4) 上一版的头发位移层，3.6 秒，留着对照
+- [splash-25d-preview.mp4](https://github.com/Streamfish-lab/dsh-splash-fish/releases/download/v0.3.0/splash-25d-preview.mp4) 完整启动动画，5.07 秒
+- [hair_wave_preview.mp4](https://github.com/Streamfish-lab/dsh-splash-fish/releases/download/v0.3.0/hair_wave_preview.mp4) 上一版的头发位移层，3.6 秒，留着对照
 - `preview.html` 用浏览器直接打开就能看，加 `?t=2600` 可以冻在某一帧
 
 纯客户端插件，挂在 `shell.overlay` 槽位上，每次页面加载只播一次，播完自己卸载，等不及就点一下屏幕、按任意键、或者滚一下滚轮，立刻进收尾——急着开始干活的时候不用干看着。那一下点击会被吃掉，不会漏到下面的界面上。
@@ -23,9 +23,9 @@
 
 ## 安装
 
-**有 dsh 桌面版就能装**——Windows 和 Mac 都行。Mac 上那两个 `.bat` 用不了，换成 python 命令，[AGENTS.md](AGENTS.md) 里写了。
+**有 dsh 桌面版就能装**——Windows 和 Mac 都行。Mac 上 `换自己的图.bat` 用不了，换成 python 命令，[AGENTS.md](AGENTS.md) 里写了。
 
-**让Agent装**：一句话就够。
+**让别人装**：一句话就够。
 ```
 帮我安装这个 DeepSeek Harness 插件：https://github.com/Streamfish-lab/dsh-splash-fish
 ```
@@ -189,7 +189,7 @@ dsh-splash-fish/
 ├── assets/               splash.webp / wall_25d.webm / hair_wave.webm
 ├── hair/tools/           01 分割 02 权重 04 编码 05 深度 06 渲染 07 拆层 08 分层
 ├── hair/masks/           三张图：mask、权重、深度
-├── preview/              预览 mp4
+├── preview/              预览图（视频在 Release 附件里）
 ├── preview.html          免安装预览
 ├── dev/harness.html      自测页，?t= 冻结帧，?nohair=1 去掉视频层做对比
 └── AGENTS.md             给 Agent 看的安装说明
