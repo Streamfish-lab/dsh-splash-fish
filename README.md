@@ -25,7 +25,7 @@
 
 **有 dsh 桌面版就能装**——Windows 和 Mac 都行。Mac 上那两个 `.bat` 用不了，换成 python 命令，[AGENTS.md](AGENTS.md) 里写了。
 
-**让别人装**：一句话就够。
+**让Agent装**：一句话就够。
 ```
 帮我安装这个 DeepSeek Harness 插件：https://github.com/Streamfish-lab/dsh-splash-fish
 ```
