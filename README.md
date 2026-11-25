@@ -10,7 +10,7 @@
 
 
 
-<img width="640" height="343" alt="70952" src="https://github.com/user-attachments/assets/c6bc0b9e-79b1-482a-bb32-20cddea08155" />
+<p align="center"><img src="https://github.com/user-attachments/assets/c6bc0b9e-79b1-482a-bb32-20cddea08155" width="720" alt="开屏动画"></p>
 
 
 
