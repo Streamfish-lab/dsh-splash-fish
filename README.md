@@ -8,7 +8,11 @@
 ![version](https://img.shields.io/badge/version-0.3.0-black?style=flat-square)
 ![platform](https://img.shields.io/badge/Windows%20%7C%20macOS-black?style=flat-square)
 
-https://github.com/user-attachments/assets/替换成你上传的视频ID
+
+
+https://github.com/user-attachments/assets/8c18cd8d-3094-4837-91ff-90267f97d4dd
+
+
 
 ## 安装
 
